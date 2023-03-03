@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bucket.h"
+#include "chipproxy.h"
 
 ProxyBucket *chipproxy_bucket_create(int max) {
 	ProxyBucket *bucket = malloc(sizeof(ProxyBucket));

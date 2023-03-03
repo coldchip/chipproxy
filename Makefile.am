@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = subdir-objects foreign
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS = chipproxy
-chipproxy_SOURCES = src/main.c src/list.c src/bucket.c
+chipproxy_SOURCES = src/main.c src/event.c src/host.c src/peer.c src/list.c src/bucket.c src/chipproxy.c
 
 chipproxy_CFLAGS = -Ofast -s -std=gnu99 -Wall
 chipproxy_LDADD =  
