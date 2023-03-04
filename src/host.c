@@ -11,8 +11,8 @@
 #include <arpa/inet.h> 
 #include <netinet/tcp.h>
 
-ProxySocket *chipproxy_host_create() {
-	ProxySocket *host = malloc(sizeof(ProxySocket));
+ProxyHost *chipproxy_host_create() {
+	ProxyHost *host = malloc(sizeof(ProxyHost));
 
 	list_clear(&host->peers);
 
@@ -34,7 +34,7 @@ ProxySocket *chipproxy_host_create() {
 	return host;
 }
 
-bool chipproxy_host_setopt_buffer(ProxySocket *socket, int send, int recv) {
+bool chipproxy_host_setopt_buffer(ProxyHost *socket, int send, int recv) {
 	if(setsockopt(socket->fd, SOL_SOCKET, SO_SNDBUF, (char*)&send, (int)sizeof(send)) < 0){
 		return false;
 	}
@@ -57,7 +57,7 @@ bool chipproxy_host_set_non_block(int fd) {
 	return false;
 }
 
-bool chipproxy_host_bind(ProxySocket *host, const char *ip, int port) {
+bool chipproxy_host_bind(ProxyHost *host, const char *ip, int port) {
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family      = AF_INET;
@@ -68,13 +68,13 @@ bool chipproxy_host_bind(ProxySocket *host, const char *ip, int port) {
 		return false;
 	}
 
-	if(listen(host->fd, 32) != 0) { 
+	if(listen(host->fd, 512) != 0) { 
 		return false;
 	}
 	return true;
 }
 
-ProxyPeer *chipproxy_host_accept(ProxySocket *host) {
+ProxyPeer *chipproxy_host_accept(ProxyHost *host) {
 	struct sockaddr_in addr;
 
 	int fd = accept(host->fd, (struct sockaddr*)&addr, &(socklen_t){sizeof(addr)});
@@ -92,7 +92,7 @@ ProxyPeer *chipproxy_host_accept(ProxySocket *host) {
 	return NULL;
 }
 
-void chipproxy_host_free(ProxySocket *host) {
+void chipproxy_host_free(ProxyHost *host) {
 	ListNode *i = list_begin(&host->peers);
 	while(i != list_end(&host->peers)) {
 		ProxyPeer *peer = (ProxyPeer*)i;

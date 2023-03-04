@@ -5,16 +5,16 @@
 #include "peer.h"
 #include <stdbool.h>
 
-typedef struct _ProxySocket {
+typedef struct _ProxyHost {
 	int fd;
 	List peers;
-} ProxySocket;
+} ProxyHost;
 
-ProxySocket       *chipproxy_host_create();
-bool               chipproxy_host_setopt_buffer(ProxySocket *socket, int send, int recv);
+ProxyHost         *chipproxy_host_create();
+bool               chipproxy_host_setopt_buffer(ProxyHost *socket, int send, int recv);
 bool               chipproxy_host_set_non_block(int fd);
-bool               chipproxy_host_bind(ProxySocket *host, const char *ip, int port);
-ProxyPeer         *chipproxy_host_accept(ProxySocket *host);
-void               chipproxy_host_free(ProxySocket *host);
+bool               chipproxy_host_bind(ProxyHost *host, const char *ip, int port);
+ProxyPeer         *chipproxy_host_accept(ProxyHost *host);
+void               chipproxy_host_free(ProxyHost *host);
 
 #endif

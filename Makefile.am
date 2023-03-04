@@ -6,7 +6,7 @@ chipproxy_SOURCES = src/main.c src/event.c src/host.c src/peer.c src/list.c src/
 
 chipproxy_CFLAGS = -Ofast -s -std=gnu99 -Wall
 chipproxy_LDADD =  
-chipproxy_LDFLAGS =  
+chipproxy_LDFLAGS = 
 
 MAINTAINERCLEANFILES =                                  \
         aclocal.m4 config.guess config.xml              \

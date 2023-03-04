@@ -16,7 +16,7 @@
 #include "list.h"
 #include "chipproxy.h"
 
-ProxySocket *host = NULL;
+ProxyHost *host = NULL;
 
 void chipproxy_init() {
 	signal(SIGPIPE, SIG_IGN);
@@ -102,7 +102,7 @@ void chipproxy_loop() {
 				ProxyPeer *peer = (ProxyPeer*)i;
 
 				if(FD_ISSET(peer->fdin, &rdset)) {
-					char buf[8192];
+					char buf[4096];
 					int r = read(peer->fdin, (char*)&buf, sizeof(buf));
 					if(r <= 0) {
 						if(errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -151,7 +151,7 @@ void chipproxy_loop() {
 					}
 				} else {
 					if(FD_ISSET(peer->fdout, &rdset)) {
-						char buf[8192];
+						char buf[4096];
 						int r = read(peer->fdout, (char*)&buf, sizeof(buf));
 						if(r <= 0) {
 							if(errno != EAGAIN && errno != EWOULDBLOCK) {
