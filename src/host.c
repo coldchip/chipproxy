@@ -68,7 +68,7 @@ bool chipproxy_host_bind(ProxyHost *host, const char *ip, int port) {
 		return false;
 	}
 
-	if(listen(host->fd, 512) != 0) { 
+	if(listen(host->fd, 511) != 0) { 
 		return false;
 	}
 	return true;

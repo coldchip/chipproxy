@@ -4,10 +4,13 @@
 #include "list.h"
 #include "peer.h"
 #include <stdbool.h>
+#include <arpa/inet.h> 
 
 typedef struct _ProxyHost {
+	ListNode node;
 	int fd;
 	List peers;
+	struct sockaddr_in proxy_pass;
 } ProxyHost;
 
 ProxyHost         *chipproxy_host_create();
