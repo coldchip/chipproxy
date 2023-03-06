@@ -29,6 +29,10 @@ ProxyHost *chipproxy_host_create() {
 		return NULL;
 	}
 
+	if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &(char){1}, sizeof(int)) ) {
+		return NULL;
+	}
+
 	host->fd = fd;
 
 	return host;
@@ -80,8 +84,7 @@ ProxyPeer *chipproxy_host_accept(ProxyHost *host) {
 	int fd = accept(host->fd, (struct sockaddr*)&addr, &(socklen_t){sizeof(addr)});
 	if(fd >= 0) {
 		if(!chipproxy_host_set_non_block(fd)) {
-			printf("unable to set socket to non blocking mode\n");
-			exit(1);
+			chipproxy_log("unable to set socket to non blocking mode");
 		}
 
 		ProxyPeer *peer = chipproxy_peer_create(fd);

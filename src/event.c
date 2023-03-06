@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -14,13 +13,17 @@
 #include "bucket.h"
 #include "host.h"
 #include "list.h"
+#include "config.h"
 #include "chipproxy.h"
 
 char *bind_ip[]   = {"0.0.0.0", "0.0.0.0", "0.0.0.0", "0.0.0.0"};
-int   bind_port[] = {80, 443, 8080, 10022};
+int   bind_port[] = {4655, 4656, 4657, 4658};
 
-char *pass_ip[]   = {"127.0.0.1", "3.0.7.3", "127.0.0.1", "127.0.0.1"};
-int   pass_port[] = {5001, 443, 5001, 22};
+char *pass_ip[]   = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "3.0.7.3"};
+int   pass_port[] = {6060, 80, 80, 443};
+
+uint64_t tx = 0;
+uint64_t rx = 0;
 
 List hosts;
 
@@ -41,18 +44,15 @@ void chipproxy_setup() {
 	for(int i = 0; i < sizeof(bind_ip) / sizeof(bind_ip[0]); i++) {
 		ProxyHost *host = chipproxy_host_create();
 		if(!host) {
-			printf("unable to set socket to non blocking mode\n");
-			exit(1);
+			chipproxy_error("unable to set socket to non blocking mode\n");
 		}
 
 		if(!chipproxy_host_setopt_buffer(host, 512000, 512000)) {
-			printf("unable to set socket snd/rcv buffers\n");
-			exit(1);
+			chipproxy_error("unable to set socket snd/rcv buffers");
 		}
 
 		if(!chipproxy_host_bind(host, bind_ip[i], bind_port[i])) {
-			printf("unable to bind\n");
-			exit(1);
+			chipproxy_error("unable to bind");
 		}
 
 		host->proxy_pass.sin_family = AF_INET;
@@ -66,6 +66,7 @@ void chipproxy_setup() {
 void chipproxy_loop() {
 	struct timeval tv;
 	fd_set rdset, wdset;
+	int last_display = 0;
 
 	while(1) {
 		tv.tv_sec = 0;
@@ -117,6 +118,24 @@ void chipproxy_loop() {
 		}
 
 		if(select(max + 1, &rdset, &wdset, NULL, &tv) >= 0) {
+			if(chipproxy_get_time() - last_display > 1) {
+				char tx_c[64];
+				char rx_c[64];
+
+				strcpy(tx_c, chipproxy_format_bytes(tx));
+				strcpy(rx_c, chipproxy_format_bytes(rx));
+
+				int count = 0;
+				for(ListNode *h = list_begin(&hosts); h != list_end(&hosts); h = list_next(h)) {
+					ProxyHost *host = (ProxyHost*)h;
+					count += (int)list_size(&host->peers);
+				}
+
+				chipproxy_log("tx: %s rx: %s peers: %i", tx_c, rx_c, count);
+
+				last_display = chipproxy_get_time();
+			}
+
 			for(ListNode *h = list_begin(&hosts); h != list_end(&hosts); h = list_next(h)) {
 				ProxyHost *host = (ProxyHost*)h;
 
@@ -129,8 +148,7 @@ void chipproxy_loop() {
 							break;
 						}
 						if(!chipproxy_host_set_non_block(peer->fdout)) {
-							printf("unable to set to non blocking %i\n", peer->fdout);
-							exit(1);
+							chipproxy_error("unable to set to non blocking %i", peer->fdout);
 						}
 					}
 				}
@@ -151,6 +169,8 @@ void chipproxy_loop() {
 							}
 							break;
 						}
+
+						rx += r;
 
 						chipproxy_bucket_write(peer->inbound, buf, r);
 					}
@@ -200,6 +220,8 @@ void chipproxy_loop() {
 								break;
 							}
 
+							tx += r;
+
 							chipproxy_bucket_write(peer->outbound, buf, r);
 						}
 
@@ -236,6 +258,6 @@ void chipproxy_exit(int type) {
 		chipproxy_host_free(host);
 	}
 
-	printf("terminating... \n");
+	chipproxy_log("terminating...");
 	exit(0);
 }
