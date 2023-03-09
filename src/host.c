@@ -29,10 +29,6 @@ ProxyHost *chipproxy_host_create() {
 		return NULL;
 	}
 
-	if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &(char){1}, sizeof(int)) ) {
-		return NULL;
-	}
-
 	host->fd = fd;
 
 	return host;
@@ -104,6 +100,5 @@ void chipproxy_host_free(ProxyHost *host) {
 	}
 
 	close(host->fd);
-
 	free(host);
 }

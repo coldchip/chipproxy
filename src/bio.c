@@ -1,29 +1,29 @@
 #include <stdlib.h>
 #include <string.h>
-#include "bucket.h"
+#include "bio.h"
 #include "chipproxy.h"
 
-ProxyBucket *chipproxy_bucket_create(int max) {
-	ProxyBucket *bucket = malloc(sizeof(ProxyBucket));
+ProxyBIO *chipproxy_bio_create(int max) {
+	ProxyBIO *bucket = malloc(sizeof(ProxyBIO));
 	bucket->data = malloc(sizeof(char) * 1);
 	bucket->size = 0;
 	bucket->max = max;
 	return bucket;
 }
 
-char *chipproxy_bucket_get_buffer(ProxyBucket *bucket) {
+char *chipproxy_bio_get_buffer(ProxyBIO *bucket) {
 	return bucket->data;
 }
 
-int chipproxy_bucket_read_available(ProxyBucket *bucket) {
+int chipproxy_bio_read_available(ProxyBIO *bucket) {
 	return bucket->size;
 }
 
-int chipproxy_bucket_write_available(ProxyBucket *bucket) {
+int chipproxy_bio_write_available(ProxyBIO *bucket) {
 	return bucket->max - bucket->size;
 }
 
-int chipproxy_bucket_write(ProxyBucket *bucket, void *buf, int size) {
+int chipproxy_bio_write(ProxyBIO *bucket, void *buf, int size) {
 	bucket->data = realloc(bucket->data, bucket->size + size);
 	memcpy(bucket->data + bucket->size, buf, size);
 	bucket->size += size;
@@ -31,7 +31,7 @@ int chipproxy_bucket_write(ProxyBucket *bucket, void *buf, int size) {
 	return size;
 }
 
-int chipproxy_bucket_read(ProxyBucket *bucket, void *buf, int size) {
+int chipproxy_bio_read(ProxyBIO *bucket, void *buf, int size) {
 	size = MIN(bucket->size, size);
 
 	if(buf) {
@@ -44,7 +44,7 @@ int chipproxy_bucket_read(ProxyBucket *bucket, void *buf, int size) {
 	return size;
 }
 
-void chipproxy_bucket_free(ProxyBucket *bucket) {
+void chipproxy_bio_free(ProxyBIO *bucket) {
 	free(bucket->data);
 	free(bucket);
 }

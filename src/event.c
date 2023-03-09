@@ -10,7 +10,7 @@
 #include <errno.h>
 #include "event.h"
 #include "peer.h"
-#include "bucket.h"
+#include "bio.h"
 #include "host.h"
 #include "list.h"
 #include "config.h"
@@ -89,22 +89,22 @@ void chipproxy_loop() {
 			for(ListNode *i = list_begin(&host->peers); i != list_end(&host->peers); i = list_next(i)) {
 				ProxyPeer *peer = (ProxyPeer*)i;
 
-				if(chipproxy_bucket_write_available(peer->inbound) > 0) {
+				if(chipproxy_bio_write_available(peer->inbound) > 0) {
 					FD_SET(peer->fdin, &rdset);
 					max = MAX(max, peer->fdin);
 				}
 
-				if(chipproxy_bucket_read_available(peer->inbound) > 0) {
+				if(chipproxy_bio_read_available(peer->inbound) > 0) {
 					FD_SET(peer->fdout, &wdset);
 					max = MAX(max, peer->fdout);
 				}
 
-				if(chipproxy_bucket_write_available(peer->outbound) > 0) {
+				if(chipproxy_bio_write_available(peer->outbound) > 0) {
 					FD_SET(peer->fdout, &rdset);
 					max = MAX(max, peer->fdout);
 				}
 
-				if(chipproxy_bucket_read_available(peer->outbound) > 0) {
+				if(chipproxy_bio_read_available(peer->outbound) > 0) {
 					FD_SET(peer->fdin, &wdset);
 					max = MAX(max, peer->fdin);
 				}
@@ -172,14 +172,14 @@ void chipproxy_loop() {
 
 						rx += r;
 
-						chipproxy_bucket_write(peer->inbound, buf, r);
+						chipproxy_bio_write(peer->inbound, buf, r);
 					}
 
 					if(FD_ISSET(peer->fdin, &wdset)) {
-						int size = chipproxy_bucket_read_available(peer->outbound);
+						int size = chipproxy_bio_read_available(peer->outbound);
 
 						if(size > 0) {
-							int w = write(peer->fdin, chipproxy_bucket_get_buffer(peer->outbound), size);
+							int w = write(peer->fdin, chipproxy_bio_get_buffer(peer->outbound), size);
 							if(w <= 0) {
 								if(errno != EAGAIN && errno != EWOULDBLOCK) {
 									chipproxy_peer_free(peer);
@@ -187,7 +187,7 @@ void chipproxy_loop() {
 								break;
 							}
 
-							chipproxy_bucket_read(peer->outbound, NULL, w);
+							chipproxy_bio_read(peer->outbound, NULL, w);
 						}
 					}
 
@@ -222,14 +222,14 @@ void chipproxy_loop() {
 
 							tx += r;
 
-							chipproxy_bucket_write(peer->outbound, buf, r);
+							chipproxy_bio_write(peer->outbound, buf, r);
 						}
 
 						if(FD_ISSET(peer->fdout, &wdset)) {
-							int size = chipproxy_bucket_read_available(peer->inbound);
+							int size = chipproxy_bio_read_available(peer->inbound);
 
 							if(size > 0) {
-								int w = write(peer->fdout, chipproxy_bucket_get_buffer(peer->inbound), size);
+								int w = write(peer->fdout, chipproxy_bio_get_buffer(peer->inbound), size);
 								if(w <= 0) {
 									if(errno != EAGAIN && errno != EWOULDBLOCK) {
 										chipproxy_peer_free(peer);
@@ -237,7 +237,7 @@ void chipproxy_loop() {
 									break;
 								}
 
-								chipproxy_bucket_read(peer->inbound, NULL, w);
+								chipproxy_bio_read(peer->inbound, NULL, w);
 							}
 						}
 					}

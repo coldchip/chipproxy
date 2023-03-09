@@ -2,15 +2,15 @@
 #define PEER_H
 
 #include "list.h"
-#include "bucket.h"
+#include "bio.h"
 #include <stdbool.h>
 
 typedef struct _ProxyPeer {
 	ListNode node;
 	int fdin;
 	int fdout;
-	ProxyBucket *inbound;
-	ProxyBucket *outbound;
+	ProxyBIO *inbound;
+	ProxyBIO *outbound;
 	bool connected;
 	int connect_start;
 } ProxyPeer;
