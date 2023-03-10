@@ -5,9 +5,10 @@
 #include "peer.h"
 #include "chipproxy.h"
 
-ProxyPeer *chipproxy_peer_create(int fdin) {
+ProxyPeer *chipproxy_peer_create(int fdin, int fdout) {
 	ProxyPeer *peer = malloc(sizeof(ProxyPeer));
 	peer->fdin = fdin;
+	peer->fdout = fdout;
 	peer->inbound = chipproxy_bio_create(16384 * 2);
 	peer->outbound = chipproxy_bio_create(16384 * 2);
 	peer->connected = false;

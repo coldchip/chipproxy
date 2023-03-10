@@ -77,13 +77,22 @@ bool chipproxy_host_bind(ProxyHost *host, const char *ip, int port) {
 ProxyPeer *chipproxy_host_accept(ProxyHost *host) {
 	struct sockaddr_in addr;
 
-	int fd = accept(host->fd, (struct sockaddr*)&addr, &(socklen_t){sizeof(addr)});
-	if(fd >= 0) {
-		if(!chipproxy_host_set_non_block(fd)) {
+	int fdin = accept(host->fd, (struct sockaddr*)&addr, &(socklen_t){sizeof(addr)});
+	if(fdin >= 0) {
+		if(!chipproxy_host_set_non_block(fdin)) {
 			chipproxy_log("unable to set socket to non blocking mode");
 		}
 
-		ProxyPeer *peer = chipproxy_peer_create(fd);
+		int fdout = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+		if(fdout == -1) {
+			close(fdin);
+			return NULL;
+		}
+		if(!chipproxy_host_set_non_block(fdout)) {
+			chipproxy_error("unable to set to non blocking");
+		}
+
+		ProxyPeer *peer = chipproxy_peer_create(fdin, fdout);
 		list_insert(list_end(&host->peers), peer);
 
 		return peer;

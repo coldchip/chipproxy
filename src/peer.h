@@ -15,7 +15,7 @@ typedef struct _ProxyPeer {
 	int connect_start;
 } ProxyPeer;
 
-ProxyPeer   *chipproxy_peer_create(int fdin);
+ProxyPeer   *chipproxy_peer_create(int fdin, int fdout);
 void         chipproxy_peer_free(ProxyPeer *peer);
 
 #endif
