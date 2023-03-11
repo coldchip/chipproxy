@@ -164,6 +164,7 @@ void chipproxy_loop() {
 					if(chipproxy_event_peer_connect(peer) == EVENT_DISCONNECT) {
 						chipproxy_event_peer_disconnect(peer);
 						chipproxy_peer_free(peer);
+						continue;
 					}
 				}
 
@@ -177,6 +178,7 @@ void chipproxy_loop() {
 						if(chipproxy_event_peer_read(peer) == EVENT_DISCONNECT) {
 							chipproxy_event_peer_disconnect(peer);
 							chipproxy_peer_free(peer);
+							continue;
 						}
 					}
 
@@ -185,6 +187,7 @@ void chipproxy_loop() {
 						if(chipproxy_event_peer_write(peer) == EVENT_DISCONNECT) {
 							chipproxy_event_peer_disconnect(peer);
 							chipproxy_peer_free(peer);
+							continue;
 						}
 					}
 
@@ -197,6 +200,7 @@ void chipproxy_loop() {
 						if(errno != EINPROGRESS && errno != EAGAIN) {
 							chipproxy_event_peer_disconnect(peer);
 							chipproxy_peer_free(peer);
+							continue;
 						}
 					}
 
@@ -205,6 +209,7 @@ void chipproxy_loop() {
 						if(chipproxy_event_server_read(peer) == EVENT_DISCONNECT) {
 							chipproxy_event_peer_disconnect(peer);
 							chipproxy_peer_free(peer);
+							continue;
 						}
 					}
 
@@ -213,6 +218,7 @@ void chipproxy_loop() {
 						if(chipproxy_event_server_write(peer) == EVENT_DISCONNECT) {
 							chipproxy_event_peer_disconnect(peer);
 							chipproxy_peer_free(peer);
+							continue;
 						}
 					}
 				}

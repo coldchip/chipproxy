@@ -13,6 +13,7 @@ typedef struct _ProxyPeer {
 	ProxyBIO *outbound;
 	bool connected;
 	int connect_start;
+	int test;
 } ProxyPeer;
 
 ProxyPeer   *chipproxy_peer_create(int fdin, int fdout);
