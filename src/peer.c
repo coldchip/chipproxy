@@ -7,18 +7,22 @@
 
 ProxyPeer *chipproxy_peer_create(int fdin, int fdout) {
 	ProxyPeer *peer = malloc(sizeof(ProxyPeer));
+	peer->state = PEER_DISCONNECTED;
 	peer->fdin = fdin;
 	peer->fdout = fdout;
 	peer->inbound = chipproxy_bio_create(16384 * 2);
 	peer->outbound = chipproxy_bio_create(16384 * 2);
-	peer->connected = false;
 	peer->connect_start = chipproxy_get_time();
 	return peer;
 }
 
-void chipproxy_peer_free(ProxyPeer *peer) {
+void chipproxy_peer_disconnect(ProxyPeer *peer) {
+	peer->state = PEER_DISCONNECTING;
 	close(peer->fdin);
 	close(peer->fdout);
+}
+
+void chipproxy_peer_free(ProxyPeer *peer) {
 	chipproxy_bio_free(peer->inbound);
 	chipproxy_bio_free(peer->outbound);
 	list_remove(&peer->node);

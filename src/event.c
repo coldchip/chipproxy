@@ -64,238 +64,110 @@ void chipproxy_setup() {
 }
 
 void chipproxy_loop() {
-	struct timeval tv;
-	fd_set rdset, wdset;
-	int last_display = 0;
+	while(true) {
+		ProxyEvent event;
+		if(chipproxy_host_service(&hosts, &event) > 0) {
+			ProxyPeer *peer = event.peer;
 
-	while(1) {
-		tv.tv_sec = 0;
-		tv.tv_usec = 500000;
-
-		FD_ZERO(&rdset);
-		FD_ZERO(&wdset);
-
-		int max = 0;
-
-		for(ListNode *h = list_begin(&hosts); h != list_end(&hosts); h = list_next(h)) {
-			ProxyHost *host = (ProxyHost*)h;
-
-			FD_SET(host->fd, &rdset);
-			max = MAX(max, host->fd);
-		}
-
-		for(ListNode *h = list_begin(&hosts); h != list_end(&hosts); h = list_next(h)) {
-			ProxyHost *host = (ProxyHost*)h;
-			for(ListNode *i = list_begin(&host->peers); i != list_end(&host->peers); i = list_next(i)) {
-				ProxyPeer *peer = (ProxyPeer*)i;
-
-				/* client <==> proxy */
-				if(chipproxy_bio_write_available(peer->inbound) > 0) {
-					FD_SET(peer->fdin, &rdset);
-					max = MAX(max, peer->fdin);
+			switch(event.type) {
+				case PROXY_EVENT_CONNECT: {
+					chipproxy_event_peer_connect(peer);
 				}
+				break;
 
-				if(chipproxy_bio_read_available(peer->outbound) > 0) {
-					FD_SET(peer->fdin, &wdset);
-					max = MAX(max, peer->fdin);
+				case PROXY_EVENT_CLIENT_READ: {
+					chipproxy_event_peer_read(peer);
 				}
+				break;
 
-				/* proxy <==> server */
-				if(!peer->connected) {
-					/* attempt to connect */
-					FD_SET(peer->fdout, &wdset);
-					max = MAX(max, peer->fdout);
+				case PROXY_EVENT_CLIENT_WRITE: {
+					chipproxy_event_peer_write(peer);
 				}
+				break;
 
-				/* connected */
-				if(peer->connected && chipproxy_bio_read_available(peer->inbound) > 0) {
-					FD_SET(peer->fdout, &wdset);
-					max = MAX(max, peer->fdout);
+				case PROXY_EVENT_SERVER_READ: {
+					chipproxy_event_server_read(peer);
 				}
+				break;
 
-				if(peer->connected && chipproxy_bio_write_available(peer->outbound) > 0) {
-					FD_SET(peer->fdout, &rdset);
-					max = MAX(max, peer->fdout);
+				case PROXY_EVENT_SERVER_WRITE: {
+					chipproxy_event_server_write(peer);
 				}
+				break;
 
-			}
-		}
-
-		if(select(max + 1, &rdset, &wdset, NULL, &tv) >= 0) {
-			if(chipproxy_get_time() - last_display > 1) {
-				char tx_c[64];
-				char rx_c[64];
-
-				strcpy(tx_c, chipproxy_format_bytes(tx));
-				strcpy(rx_c, chipproxy_format_bytes(rx));
-
-				int count = 0;
-
-				for(ListNode *h = list_begin(&hosts); h != list_end(&hosts); h = list_next(h)) {
-					ProxyHost *host = (ProxyHost*)h;
-				
-					count += (int)list_size(&host->peers);
-
-					for(ListNode *i = list_begin(&host->peers); i != list_end(&host->peers); i = list_next(i)) {
-						ProxyPeer *peer = (ProxyPeer*)i;
-
-						if(chipproxy_get_time() - peer->connect_start > 15) {
-							// connect() timeout
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							break;
-						}
-					}
+				case PROXY_EVENT_DISCONNECT: {
+					chipproxy_event_peer_disconnect(peer);
 				}
-
-				chipproxy_log("tx: %s rx: %s peers: %i", tx_c, rx_c, count);
-
-				last_display = chipproxy_get_time();
-			}
-
-			ListNode *h = list_begin(&hosts);
-			while(h != list_end(&hosts)) {
-				ProxyHost *host = (ProxyHost*)h;
-				h = list_next(h);
-
-				/* client <==> proxy accept */
-				if(FD_ISSET(host->fd, &rdset) && max < FD_SETSIZE - 16) {
-					ProxyPeer *peer = chipproxy_host_accept(host);
-					if(chipproxy_event_peer_connect(peer) == EVENT_DISCONNECT) {
-						chipproxy_event_peer_disconnect(peer);
-						chipproxy_peer_free(peer);
-						continue;
-					}
-				}
-
-				ListNode *i = list_begin(&host->peers);
-				while(i != list_end(&host->peers)) {
-					ProxyPeer *peer = (ProxyPeer*)i;
-					i = list_next(i);
-
-					/* client <==> proxy read */
-					if(FD_ISSET(peer->fdin, &rdset)) {
-						if(chipproxy_event_peer_read(peer) == EVENT_DISCONNECT) {
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							continue;
-						}
-					}
-
-					/* client <==> proxy write */
-					if(FD_ISSET(peer->fdin, &wdset)) {
-						if(chipproxy_event_peer_write(peer) == EVENT_DISCONNECT) {
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							continue;
-						}
-					}
-
-					/* proxy <==> server connect */
-					if(!peer->connected && FD_ISSET(peer->fdout, &wdset)) {
-						if(connect(peer->fdout, (struct sockaddr*)&host->proxy_pass, sizeof(host->proxy_pass)) != -1) {
-							peer->connected = true;
-						}
-
-						if(errno != EINPROGRESS && errno != EAGAIN) {
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							continue;
-						}
-					}
-
-					/* proxy <==> server read */
-					if(peer->connected && FD_ISSET(peer->fdout, &rdset)) {
-						if(chipproxy_event_server_read(peer) == EVENT_DISCONNECT) {
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							continue;
-						}
-					}
-
-					/* proxy <==> server write */
-					if(peer->connected && FD_ISSET(peer->fdout, &wdset)) {
-						if(chipproxy_event_server_write(peer) == EVENT_DISCONNECT) {
-							chipproxy_event_peer_disconnect(peer);
-							chipproxy_peer_free(peer);
-							continue;
-						}
-					}
-				}
+				break;
 			}
 		}
 	}
 }
 
-EventResult chipproxy_event_peer_connect(ProxyPeer *peer) {
+void chipproxy_event_peer_connect(ProxyPeer *peer) {
 	chipproxy_log("peer %p has connected", peer);
-	return EVENT_OK;
 }
 
-EventResult chipproxy_event_peer_read(ProxyPeer *peer) {
+void chipproxy_event_peer_read(ProxyPeer *peer) {
 	char buf[4096];
 	int r = read(peer->fdin, (char*)&buf, sizeof(buf));
 	if(r <= 0) {
 		if(errno != EAGAIN && errno != EWOULDBLOCK) {
-			return EVENT_DISCONNECT;
+			chipproxy_peer_disconnect(peer);
+			return;
 		}
 	}
 
 	rx += r;
 
 	chipproxy_bio_write(peer->inbound, buf, r);
-
-	return EVENT_OK;
 }
 
-EventResult chipproxy_event_peer_write(ProxyPeer *peer) {
+void chipproxy_event_peer_write(ProxyPeer *peer) {
 	int size = chipproxy_bio_read_available(peer->outbound);
 
 	if(size > 0) {
 		int w = write(peer->fdin, chipproxy_bio_get_buffer(peer->outbound), size);
 		if(w <= 0) {
 			if(errno != EAGAIN && errno != EWOULDBLOCK) {
-				return EVENT_DISCONNECT;
+				chipproxy_peer_disconnect(peer);
+				return;
 			}
 		}
 
 		chipproxy_bio_read(peer->outbound, NULL, w);
 	}
-
-	return EVENT_OK;
 }
 
-EventResult chipproxy_event_server_read(ProxyPeer *peer) {
+void chipproxy_event_server_read(ProxyPeer *peer) {
 	char buf[4096];
 	int r = read(peer->fdout, (char*)&buf, sizeof(buf));
 	if(r <= 0) {
 		if(errno != EAGAIN && errno != EWOULDBLOCK) {
-			return EVENT_DISCONNECT;
+			chipproxy_peer_disconnect(peer);
+			return;
 		}
 	}
 
 	tx += r;
 
 	chipproxy_bio_write(peer->outbound, buf, r);
-
-	return EVENT_OK;
 }
 
-EventResult chipproxy_event_server_write(ProxyPeer *peer) {
+void chipproxy_event_server_write(ProxyPeer *peer) {
 	int size = chipproxy_bio_read_available(peer->inbound);
 
 	if(size > 0) {
 		int w = write(peer->fdout, chipproxy_bio_get_buffer(peer->inbound), size);
 		if(w <= 0) {
 			if(errno != EAGAIN && errno != EWOULDBLOCK) {
-				return EVENT_DISCONNECT;
+				chipproxy_peer_disconnect(peer);
+				return;
 			}
 		}
 
 		chipproxy_bio_read(peer->inbound, NULL, w);
 	}
-
-	return EVENT_OK;
 }
 
 void chipproxy_event_peer_disconnect(ProxyPeer *peer) {

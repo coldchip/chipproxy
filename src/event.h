@@ -13,11 +13,11 @@ void chipproxy_init();
 void chipproxy_setup();
 void chipproxy_loop();
 
-EventResult chipproxy_event_peer_connect(ProxyPeer *peer);
-EventResult chipproxy_event_peer_read(ProxyPeer *peer);
-EventResult chipproxy_event_peer_write(ProxyPeer *peer);
-EventResult chipproxy_event_server_read(ProxyPeer *peer);
-EventResult chipproxy_event_server_write(ProxyPeer *peer);
+void chipproxy_event_peer_connect(ProxyPeer *peer);
+void chipproxy_event_peer_read(ProxyPeer *peer);
+void chipproxy_event_peer_write(ProxyPeer *peer);
+void chipproxy_event_server_read(ProxyPeer *peer);
+void chipproxy_event_server_write(ProxyPeer *peer);
 void chipproxy_event_peer_disconnect(ProxyPeer *peer);
 
 void chipproxy_exit(int type);
