@@ -6,10 +6,9 @@
 #include <stdbool.h>
 
 typedef enum {
-	PEER_CONNECTED,
 	PEER_CONNECTING,
-	PEER_DISCONNECTING,
-	PEER_DISCONNECTED
+	PEER_CONNECTED,
+	PEER_DISCONNECTING
 } ProxyPeerState;
 
 typedef struct _ProxyPeer {
@@ -24,6 +23,10 @@ typedef struct _ProxyPeer {
 } ProxyPeer;
 
 ProxyPeer   *chipproxy_peer_create(int fdin, int fdout);
+void         chipproxy_peer_read(ProxyPeer *peer);
+void         chipproxy_peer_write(ProxyPeer *peer);
+void         chipproxy_peer_server_read(ProxyPeer *peer);
+void         chipproxy_peer_server_write(ProxyPeer *peer);
 void         chipproxy_peer_disconnect(ProxyPeer *peer);
 void         chipproxy_peer_free(ProxyPeer *peer);
 
