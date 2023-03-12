@@ -1,4 +1,4 @@
-AC_INIT([chipproxy], [10000061], [ryan@chip.sg])
+AC_INIT([chipproxy], [1.0], [ryan@chip.sg])
 
 AC_CONFIG_AUX_DIR(auxdir)
 AC_CONFIG_MACRO_DIR([m4])
