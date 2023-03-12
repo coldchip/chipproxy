@@ -22,10 +22,10 @@
 bool quit = false;
 
 char *bind_ip[]   = {"0.0.0.0", "0.0.0.0", "0.0.0.0", "0.0.0.0"};
-int   bind_port[] = {80, 443, 8080, 10022};
+int   bind_port[] = {4655, 4656, 4657, 4658};
 
-char *pass_ip[]   = {"127.0.0.1", "3.0.7.3", "127.0.0.1", "127.0.0.1"};
-int   pass_port[] = {5001, 443, 5001, 22};
+char *pass_ip[]   = {"127.0.0.1", "127.0.0.1", "127.0.0.1", "18.139.39.58"};
+int   pass_port[] = {5001, 80, 80, 8081};
 
 uint64_t tx = 0;
 uint64_t rx = 0;
@@ -139,8 +139,10 @@ void chipproxy_loop() {
 				/* client <==> proxy accept */
 				if(FD_ISSET(host->fd, &rdset) && max < FD_SETSIZE - 16) {
 					ProxyPeer *peer = chipproxy_host_accept(host);
-					peer->state = PEER_CONNECTING;
-					chipproxy_event_peer_connect(peer);
+					if(peer) {
+						peer->state = PEER_CONNECTING;
+						chipproxy_event_peer_connect(peer);
+					}
 				}
 
 				for(ListNode *i = list_begin(&host->peers); i != list_end(&host->peers); i = list_next(i)) {
