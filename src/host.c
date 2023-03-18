@@ -90,8 +90,7 @@ ProxyPeer *chipproxy_host_accept(ProxyHost *host) {
 
 		int fdout = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if(fdout == -1) {
-			close(fdin);
-			return NULL;
+			chipproxy_error("unable to create socket");
 		}
 		if(!chipproxy_host_set_non_block(fdout)) {
 			chipproxy_error("unable to set to non blocking");
