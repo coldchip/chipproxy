@@ -97,6 +97,7 @@ ProxyPeer *chipproxy_host_accept(ProxyHost *host) {
 		}
 
 		ProxyPeer *peer = chipproxy_peer_create(fdin, fdout);
+		peer->addr = addr;
 		if(!peer) {
 			chipproxy_error("device out of memory");
 		}

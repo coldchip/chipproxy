@@ -17,6 +17,7 @@
 #include "host.h"
 #include "list.h"
 #include "config.h"
+#include "log.h"
 #include "chipproxy.h"
 
 bool quit = false;
@@ -31,6 +32,8 @@ uint64_t tx = 0;
 uint64_t rx = 0;
 
 List hosts;
+
+ProxyLog *logger = NULL;
 
 int main(int argc, char const *argv[]) {
 	signal(SIGPIPE, SIG_IGN);
@@ -47,6 +50,8 @@ int main(int argc, char const *argv[]) {
 }
 
 void chipproxy_setup() {
+	logger = chipproxy_log_create();
+
 	list_clear(&hosts);
 
 	for(int i = 0; i < sizeof(bind_ip) / sizeof(bind_ip[0]); i++) {
@@ -219,6 +224,8 @@ void chipproxy_cleanup() {
 
 		chipproxy_host_free(host);
 	}
+
+	chipproxy_log_free(logger);
 }
 
 void chipproxy_print_stats() {
@@ -232,10 +239,14 @@ void chipproxy_print_stats() {
 
 void chipproxy_event_peer_connect(ProxyPeer *peer) {
 	chipproxy_log("peer %p has connected", peer);
+
+	char *ip = inet_ntoa(peer->addr.sin_addr);
+	chipproxy_log_add(logger, "%p has connected from ip %s:%i\n", peer, ip, peer->addr.sin_port);
 }
 
 void chipproxy_event_peer_disconnect(ProxyPeer *peer) {
 	chipproxy_log("peer %p has disconnected", peer);
+	chipproxy_log_add(logger, "%p has disconnected\n", peer);
 }
 
 uint32_t chipproxy_get_time() {

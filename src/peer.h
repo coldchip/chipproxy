@@ -4,6 +4,7 @@
 #include "list.h"
 #include "bio.h"
 #include <stdbool.h>
+#include <arpa/inet.h> 
 
 typedef enum {
 	PEER_CONNECTING,
@@ -13,6 +14,7 @@ typedef enum {
 
 typedef struct _ProxyPeer {
 	ListNode node;
+	struct sockaddr_in addr;
 	ProxyPeerState state;
 	int fdin;
 	int fdout;
